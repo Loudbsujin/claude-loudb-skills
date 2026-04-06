@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>편집 일정표</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f7fa;color:#1a1a1a;padding:1.5rem;max-width:980px;margin:0 auto}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.nav-group{display:flex;align-items:center;gap:8px}
+.nav-btn{background:#fff;border:1px solid #d8d6e0;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;color:#333;transition:background .2s,border-color .2s,box-shadow .2s}
+.nav-btn:hover{background:#f0eff4}
+.nav-btn:active{background:#e6e4ee;transform:scale(0.97)}
+.nav-btn:focus-visible{outline:2px solid #7F77DD;outline-offset:2px}
+.month-title{font-size:20px;font-weight:500}
+.add-btn{background:#534AB7;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-size:13px;font-weight:500;transition:background .2s,box-shadow .2s}
+.add-btn:hover{background:#3C3489}
+.add-btn:active{background:#2e2870;transform:scale(0.97)}
+.add-btn:focus-visible{outline:2px solid #7F77DD;outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:1rem}
+.leg{display:flex;align-items:center;gap:4px;font-size:12px;color:#555}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:1rem}
+.stat{background:#fefefd;border:1px solid #e8e6f0;border-radius:8px;padding:12px 16px;text-align:center;transition:border-color .2s,box-shadow .2s}
+.stat:hover{border-color:#c4b8f0}
+.stat-n{font-size:20px;font-weight:500}
+.stat-l{font-size:11px;color:#636173;margin-top:4px}
+.stat.cr{background:#FAF5FF;border-color:#C4B8F0}
+.credit-bar{background:#F3F0FF;border:1px solid #C4B8F0;border-radius:10px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.credit-icon{width:32px;height:32px;border-radius:8px;background:#534AB7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0}
+.credit-info{flex:1;min-width:140px}
+.credit-info h4{font-size:13px;font-weight:500;color:#3C3489}
+.credit-info p{font-size:11px;color:#6B5FB5;margin-top:4px}
+.credit-num{text-align:right;min-width:100px}
+.credit-total{font-size:22px;font-weight:500;color:#534AB7}
+.credit-sub{font-size:11px;color:#6b6980;margin-top:4px}
+.budget-row{display:flex;align-items:center;gap:8px;width:100%}
+.budget-row label{font-size:11px;color:#6B5FB5;white-space:nowrap}
+.budget-input{border:1px solid #C4B8F0;border-radius:6px;padding:4px 8px;font-size:12px;color:#3C3489;background:#fff;width:88px;outline:none;transition:border-color .2s,box-shadow .2s}
+.budget-input:focus-visible{border-color:#7F77DD;box-shadow:0 0 0 2px rgba(127,119,221,0.25)}
+.prog-wrap{flex:1;height:8px;background:#E8E0FF;border-radius:99px;overflow:hidden}
+.prog-bar{height:100%;border-radius:99px;background:#534AB7;transition:width .3s}
+.prog-bar.warn{background:#D85A30}
+.pct{font-size:11px;color:#6B5FB5;white-space:nowrap;min-width:30px;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dlabel{text-align:center;font-size:11px;color:#6b6980;padding:8px 0;font-weight:500}
+.cell{min-height:94px;background:#fefefd;border:1px solid #e8e6f0;border-radius:8px;padding:8px;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.cell:hover{border-color:#a9a4c8;box-shadow:0 1px 4px rgba(83,74,183,0.08)}
+.cell.empty{background:transparent;border-color:transparent;cursor:default;box-shadow:none}
+.cell.today{border:2px solid #7F77DD}
+.dnum{font-size:11px;color:#717080;margin-bottom:4px}
+.cell.today .dnum{color:#534AB7;font-weight:600}
+.evt{border-radius:4px;padding:2px 4px;font-size:10px;margin-bottom:2px;overflow:hidden;cursor:pointer;display:flex;align-items:center;gap:4px;transition:opacity .2s}
+.evt:hover{opacity:.85}
+.evt-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.evt-c{font-size:9px;opacity:.75;flex-shrink:0;background:rgba(0,0,0,0.1);border-radius:4px;padding:0 4px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0);z-index:200;align-items:center;justify-content:center;transition:background .2s ease}
+.modal-bg.open{display:flex;background:rgba(30,26,60,0.45)}
+.modal{background:#fff;border-radius:12px;padding:1.5rem;width:min(440px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15);opacity:0;transform:translateY(12px);transition:opacity .2s ease,transform .2s ease}
+.modal-bg.open .modal{opacity:1;transform:translateY(0)}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:1rem}
+.frow{margin-bottom:12px}
+.frow label{display:block;font-size:12px;color:#666;margin-bottom:4px}
+.frow input,.frow select,.frow textarea{width:100%;font-size:13px;border:1px solid #d8d6e0;border-radius:8px;padding:8px 12px;background:#fff;color:#222;outline:none;transition:border-color .2s,box-shadow .2s}
+.frow input:hover,.frow select:hover,.frow textarea:hover{border-color:#b0acc4}
+.frow input:focus,.frow select:focus,.frow textarea:focus{border-color:#7F77DD;box-shadow:0 0 0 2px rgba(127,119,221,0.2)}
+.frow input:focus-visible,.frow select:focus-visible,.frow textarea:focus-visible{border-color:#7F77DD;box-shadow:0 0 0 2px rgba(127,119,221,0.3)}
+.frow textarea{resize:vertical;min-height:52px}
+.ai-box{background:#F3F0FF;border:1px solid #C4B8F0;border-radius:8px;padding:12px;margin-bottom:12px}
+.ai-box-title{font-size:12px;font-weight:500;color:#3C3489;margin-bottom:8px}
+.ai-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ai-tr{display:flex;flex-direction:column;gap:4px}
+.ai-tr label{font-size:11px;color:#6B5FB5}
+.ai-tr input{border:1px solid #C4B8F0;border-radius:6px;padding:8px 8px;font-size:12px;color:#3C3489;background:#fff;width:100%;outline:none;transition:border-color .2s,box-shadow .2s}
+.ai-tr input:focus{border-color:#7F77DD;box-shadow:0 0 0 2px rgba(127,119,221,0.2)}
+.ai-tr input:focus-visible{border-color:#7F77DD;box-shadow:0 0 0 2px rgba(127,119,221,0.3)}
+.ai-sum-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #C4B8F0}
+.ai-sum-lbl{font-size:11px;color:#6B5FB5}
+.ai-sum-val{font-size:15px;font-weight:500;color:#534AB7}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
+.bcnl{background:#fff;border:1px solid #d8d6e0;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;color:#555;transition:background .2s,border-color .2s}
+.bcnl:hover{background:#f0eff4}
+.bcnl:active{background:#e6e4ee;transform:scale(0.97)}
+.bcnl:focus-visible{outline:2px solid #7F77DD;outline-offset:2px}
+.bsav{background:#534AB7;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-size:13px;color:#fff;font-weight:500;transition:background .2s,box-shadow .2s}
+.bsav:hover{background:#3C3489}
+.bsav:active{background:#2e2870;transform:scale(0.97)}
+.bsav:focus-visible{outline:2px solid #7F77DD;outline-offset:2px}
+.bdel{background:#fff;border:1px solid #e57373;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;color:#c62828;transition:background .2s,border-color .2s}
+.bdel:hover{background:#fef0f0}
+.bdel:active{background:#fde0e0;transform:scale(0.97)}
+.bdel:focus-visible{outline:2px solid #e57373;outline-offset:2px}
+@media(max-width:640px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .cell{min-height:70px}
+  .ai-tools{grid-template-columns:1fr}
+  .nav-btn{min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center}
+  .add-btn{min-height:44px}
+  .bcnl,.bsav,.bdel{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+  .modal{transition:none}
+  .modal-bg{transition:none}
+  .prog-bar{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="nav-group">
+    <button class="nav-btn" id="prevBtn" aria-label="이전 달로 이동">&#8592;</button>
+    <span class="month-title" id="monthTitle"></span>
+    <button class="nav-btn" id="nextBtn" aria-label="다음 달로 이동">&#8594;</button>
+  </div>
+  <button class="add-btn" id="addBtn">+ 콘텐츠 추가</button>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#7F77DD"></div>유튜브/영상</div>
+  <div class="leg"><div class="leg-dot" style="background:#1D9E75"></div>블로그/웹</div>
+  <div class="leg"><div class="leg-dot" style="background:#D85A30"></div>SNS</div>
+  <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>뉴스레터</div>
+  <div class="leg"><div class="leg-dot" style="background:#888780"></div>기타</div>
+</div>
+
+<div class="credit-bar">
+  <div class="credit-icon">&#10024;</div>
+  <div class="credit-info">
+    <h4>이번 달 AI 크레딧 사용량</h4>
+    <p>콘텐츠별 도구 크레딧을 누적 집계합니다</p>
+  </div>
+  <div class="credit-num">
+    <div class="credit-total" id="bannerTotal">0 크레딧</div>
+    <div class="credit-sub" id="bannerSub">0개 콘텐츠 사용</div>
+  </div>
+  <div class="budget-row">
+    <label>월 예산</label>
+    <input class="budget-input" type="number" id="budgetInput" value="1000" min="1">
+    <div class="prog-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+    <span class="pct" id="pctLabel">0%</span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n" id="sTotal">0</div><div class="stat-l">이번 달 전체</div></div>
+  <div class="stat"><div class="stat-n" id="sYt" style="color:#534AB7">0</div><div class="stat-l">유튜브</div></div>
+  <div class="stat"><div class="stat-n" id="sSns" style="color:#993C1D">0</div><div class="stat-l">SNS</div></div>
+  <div class="stat"><div class="stat-n" id="sDone" style="color:#0F6E56">0</div><div class="stat-l">완료</div></div>
+  <div class="stat cr"><div class="stat-n" id="sTopTool" style="color:#534AB7">-</div><div class="stat-l">최다 사용 AI</div></div>
+</div>
+
+<div class="grid" id="grid">
+  <div class="dlabel">일</div><div class="dlabel">월</div><div class="dlabel">화</div>
+  <div class="dlabel">수</div><div class="dlabel">목</div><div class="dlabel">금</div><div class="dlabel">토</div>
+</div>
+
+<div class="modal-bg" id="modalBg" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3 id="modalTitle">콘텐츠 추가</h3>
+    <div class="frow"><label>제목</label><input id="fTitle" placeholder="콘텐츠 제목을 입력하세요"></div>
+    <div class="frow"><label>채널</label>
+      <select id="fCh">
+        <option value="yt">유튜브/영상</option>
+        <option value="blog">블로그/웹</option>
+        <option value="sns">SNS</option>
+        <option value="news">뉴스레터</option>
+        <option value="etc">기타</option>
+      </select>
+    </div>
+    <div class="frow"><label>날짜</label><input type="date" id="fDate"></div>
+    <div class="frow"><label>상태</label>
+      <select id="fSt">
+        <option value="idea">아이디어</option>
+        <option value="writing">제작 중</option>
+        <option value="review">검토</option>
+        <option value="done">완료</option>
+      </select>
+    </div>
+    <div class="ai-box">
+      <div class="ai-box-title">&#10024; AI 크레딧 사용량</div>
+      <div class="ai-tools">
+        <div class="ai-tr"><label>Claude (스크립트/글쓰기)</label><input type="number" id="cClaude" min="0" value="0"></div>
+        <div class="ai-tr"><label>Midjourney (썸네일)</label><input type="number" id="cMj" min="0" value="0"></div>
+        <div class="ai-tr"><label>ChatGPT (리서치)</label><input type="number" id="cGpt" min="0" value="0"></div>
+        <div class="ai-tr"><label>ElevenLabs (보이스)</label><input type="number" id="cEleven" min="0" value="0"></div>
+        <div class="ai-tr"><label>Runway (영상편집)</label><input type="number" id="cRunway" min="0" value="0"></div>
+        <div class="ai-tr"><label>기타 AI 도구</label><input type="number" id="cEtc" min="0" value="0"></div>
+      </div>
+      <div class="ai-sum-row">
+        <span class="ai-sum-lbl">이 콘텐츠 합계</span>
+        <span class="ai-sum-val" id="modalSum">0 크레딧</span>
+      </div>
+    </div>
+    <div class="frow"><label>메모</label><textarea id="fNote" placeholder="간단한 메모..."></textarea></div>
+    <div class="mbtns">
+      <button class="bdel" id="btnDel">삭제</button>
+      <button class="bcnl" id="btnCancel">취소</button>
+      <button class="bsav" id="btnSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+var CL={yt:'#EEEDFE',blog:'#E1F5EE',sns:'#FAECE7',news:'#E6F1FB',etc:'#F1EFE8'};
+var CT={yt:'#3C3489',blog:'#085041',sns:'#993C1D',news:'#0C447C',etc:'#444441'};
+var SL={idea:'아이디어',writing:'제작 중',review:'검토',done:'완료'};
+var AIF=['cClaude','cMj','cGpt','cEleven','cRunway','cEtc'];
+var AIL={cClaude:'Claude',cMj:'Midjourney',cGpt:'ChatGPT',cEleven:'ElevenLabs',cRunway:'Runway',cEtc:'기타'};
+var cur=new Date();cur.setDate(1);
+var evts=[];try{evts=JSON.parse(localStorage.getItem('edcal3')||'[]');}catch(e){}
+var budget=1000;try{budget=parseInt(localStorage.getItem('edcal3_b')||'1000');}catch(e){}
+var editId=null;
+document.getElementById('budgetInput').value=budget;
+
+function ds(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+var today=ds(new Date());
+
+function persist(){try{localStorage.setItem('edcal3',JSON.stringify(evts));localStorage.setItem('edcal3_b',String(budget));}catch(e){}}
+
+function cSum(e){return AIF.reduce(function(s,k){return s+(parseInt(e[k])||0);},0);}
+
+function updateSum(){
+  var t=AIF.reduce(function(s,k){return s+(parseInt(document.getElementById(k).value)||0);},0);
+  document.getElementById('modalSum').textContent=t+' 크레딧';
+}
+AIF.forEach(function(k){document.getElementById(k).addEventListener('input',updateSum);});
+
+function render(){
+  var grid=document.getElementById('grid');
+  var cells=grid.querySelectorAll('.cell');
+  for(var i=0;i<cells.length;i++)cells[i].remove();
+  var y=cur.getFullYear(),m=cur.getMonth();
+  document.getElementById('monthTitle').textContent=y+'년 '+(m+1)+'월';
+  var first=new Date(y,m,1).getDay();
+  var dmax=new Date(y,m+1,0).getDate();
+  for(var i=0;i<first;i++){var e=document.createElement('div');e.className='cell empty';grid.appendChild(e);}
+  for(var d=1;d<=dmax;d++){
+    var dstr=y+'-'+('0'+(m+1)).slice(-2)+'-'+('0'+d).slice(-2);
+    var cell=document.createElement('div');
+    cell.className='cell'+(dstr===today?' today':'');
+    var dn=document.createElement('div');dn.className='dnum';dn.textContent=d;cell.appendChild(dn);
+    (function(ds2){
+      evts.filter(function(e){return e.date===ds2;}).forEach(function(ev){
+        var el=document.createElement('div');el.className='evt';
+        el.style.background=CL[ev.ch]||CL.etc;el.style.color=CT[ev.ch]||CT.etc;
+        var cs=cSum(ev);
+        var t=document.createElement('span');t.className='evt-t';t.textContent=(ev.st==='done'?'✓ ':'')+ev.title;
+        el.appendChild(t);
+        if(cs>0){var cr=document.createElement('span');cr.className='evt-c';cr.textContent=cs+'c';el.appendChild(cr);}
+        el.title=ev.title+' | '+SL[ev.st]+(cs>0?' | AI '+cs+'c':'');
+        el.onclick=function(x){x.stopPropagation();openEdit(ev);};
+        cell.appendChild(el);
+      });
+      cell.onclick=function(){openNew(ds2);};
+    })(dstr);
+    grid.appendChild(cell);
+  }
+  updateStats();
+}
+
+function updateStats(){
+  var y=cur.getFullYear(),m=cur.getMonth();
+  var pfx=y+'-'+('0'+(m+1)).slice(-2);
+  var me=evts.filter(function(e){return e.date&&e.date.startsWith(pfx);});
+  document.getElementById('sTotal').textContent=me.length;
+  document.getElementById('sYt').textContent=me.filter(function(e){return e.ch==='yt';}).length;
+  document.getElementById('sSns').textContent=me.filter(function(e){return e.ch==='sns';}).length;
+  document.getElementById('sDone').textContent=me.filter(function(e){return e.st==='done';}).length;
+  var totalCr=me.reduce(function(s,e){return s+cSum(e);},0);
+  var used=me.filter(function(e){return cSum(e)>0;}).length;
+  document.getElementById('bannerTotal').textContent=totalCr.toLocaleString()+' 크레딧';
+  document.getElementById('bannerSub').textContent=used+'개 콘텐츠 사용';
+  var pct=budget>0?Math.min(Math.round(totalCr/budget*100),100):0;
+  var pb=document.getElementById('progBar');
+  pb.style.width=pct+'%';
+  pb.className='prog-bar'+(pct>=80?' warn':'');
+  document.getElementById('pctLabel').textContent=pct+'%';
+  var totals={};
+  AIF.forEach(function(k){totals[k]=me.reduce(function(s,e){return s+(parseInt(e[k])||0);},0);});
+  var topK=null,topV=0;
+  AIF.forEach(function(k){if(totals[k]>topV){topV=totals[k];topK=k;}});
+  document.getElementById('sTopTool').textContent=topK&&topV>0?AIL[topK]:'-';
+}
+
+function openNew(dstr){
+  editId=null;
+  document.getElementById('modalTitle').textContent='콘텐츠 추가';
+  document.getElementById('fTitle').value='';
+  document.getElementById('fCh').value='yt';
+  document.getElementById('fDate').value=dstr||ds(cur);
+  document.getElementById('fSt').value='idea';
+  document.getElementById('fNote').value='';
+  AIF.forEach(function(k){document.getElementById(k).value=0;});
+  updateSum();
+  document.getElementById('btnDel').style.display='none';
+  document.getElementById('modalBg').classList.add('open');
+}
+function openEdit(ev){
+  editId=ev.id;
+  document.getElementById('modalTitle').textContent='콘텐츠 수정';
+  document.getElementById('fTitle').value=ev.title;
+  document.getElementById('fCh').value=ev.ch;
+  document.getElementById('fDate').value=ev.date;
+  document.getElementById('fSt').value=ev.st;
+  document.getElementById('fNote').value=ev.note||'';
+  AIF.forEach(function(k){document.getElementById(k).value=ev[k]||0;});
+  updateSum();
+  document.getElementById('btnDel').style.display='';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');}
+function saveEvt(){
+  var t=document.getElementById('fTitle').value.trim();
+  if(!t){alert('제목을 입력해 주세요.');return;}
+  var obj={id:editId||String(Date.now()),title:t,ch:document.getElementById('fCh').value,date:document.getElementById('fDate').value,st:document.getElementById('fSt').value,note:document.getElementById('fNote').value};
+  AIF.forEach(function(k){obj[k]=parseInt(document.getElementById(k).value)||0;});
+  if(editId){var idx=evts.findIndex(function(e){return e.id===editId;});if(idx>-1)evts[idx]=obj;}
+  else evts.push(obj);
+  persist();closeModal();render();
+}
+function delEvt(){if(!confirm('이 항목을 삭제할까요?'))return;evts=evts.filter(function(e){return e.id!==editId;});persist();closeModal();render();}
+
+document.getElementById('prevBtn').onclick=function(){cur.setMonth(cur.getMonth()-1);render();};
+document.getElementById('nextBtn').onclick=function(){cur.setMonth(cur.getMonth()+1);render();};
+document.getElementById('addBtn').onclick=function(){openNew(ds(cur));};
+document.getElementById('btnCancel').onclick=closeModal;
+document.getElementById('btnSave').onclick=saveEvt;
+document.getElementById('btnDel').onclick=delEvt;
+document.getElementById('modalBg').onclick=function(e){if(e.target===this)closeModal();};
+document.getElementById('budgetInput').addEventListener('input',function(){budget=parseInt(this.value)||1000;persist();updateStats();});
+
+if(evts.length===0){
+  var y=cur.getFullYear(),m=cur.getMonth();
+  var p=y+'-'+('0'+(m+1)).slice(-2)+'-';
+  evts=[
+    {id:'1',title:'채널 소개 영상',ch:'yt',date:p+'03',st:'done',note:'',cClaude:80,cMj:20,cGpt:0,cEleven:30,cRunway:0,cEtc:0},
+    {id:'2',title:'주간 브이로그',ch:'yt',date:p+'07',st:'writing',note:'',cClaude:50,cMj:10,cGpt:20,cEleven:0,cRunway:40,cEtc:0},
+    {id:'3',title:'인스타 피드 3종',ch:'sns',date:p+'09',st:'idea',note:'',cClaude:10,cMj:60,cGpt:0,cEleven:0,cRunway:0,cEtc:0},
+    {id:'4',title:'블로그 포스팅',ch:'blog',date:p+'12',st:'idea',note:'',cClaude:120,cMj:0,cGpt:30,cEleven:0,cRunway:0,cEtc:0},
+    {id:'5',title:'뉴스레터 발송',ch:'news',date:p+'15',st:'writing',note:'',cClaude:60,cMj:0,cGpt:10,cEleven:0,cRunway:0,cEtc:0},
+    {id:'6',title:'튜토리얼 영상',ch:'yt',date:p+'18',st:'idea',note:'',cClaude:90,cMj:15,cGpt:0,cEleven:50,cRunway:80,cEtc:0},
+    {id:'7',title:'릴스 제작',ch:'sns',date:p+'22',st:'idea',note:'',cClaude:20,cMj:40,cGpt:0,cEleven:0,cRunway:60,cEtc:0},
+    {id:'8',title:'월말 리캡 영상',ch:'yt',date:p+'28',st:'idea',note:'',cClaude:70,cMj:10,cGpt:0,cEleven:20,cRunway:30,cEtc:0},
+  ];
+  persist();
+}
+render();
+})();
+</script>
+</body>
+</html>
